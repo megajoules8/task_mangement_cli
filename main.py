@@ -1,6 +1,6 @@
 #print("Script is running!")  # Add this at the top of main.py
 from db_connection import connect_to_db
-from operations import login, register, logout, create_task, view_tasks, view_all_tasks, update_task, delete_task, assign_task
+from operations import login, register, logout, create_task, view_tasks, view_all_tasks, update_task, delete_task, assign_task, delete_user
 
 # Global variable to track the logged-in user
 current_user = None
@@ -19,6 +19,7 @@ def show_menu():
     8. Assign Task
     9. Logout
     10. Exit
+    11. Delete User
     """)
 
 def main():
@@ -84,6 +85,11 @@ def main():
             elif choice == "10":  # Exit
                 print("Exiting the Task Manager. Goodbye!")
                 break
+            elif choice == "11":  # Delete User
+                if current_user:
+                    delete_user(cursor, conn, current_user=current_user)
+                else:
+                    print("You must be logged in to delete a user.")
             else:
                 print("Invalid choice. Please try again.")
         # Close the database connection

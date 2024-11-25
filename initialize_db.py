@@ -28,18 +28,13 @@ def initialize_db():
             title TEXT NOT NULL,
             description TEXT,
             status TEXT NOT NULL,
-            user_id INTEGER,
-            FOREIGN KEY (user_id) REFERENCES users (id)
+            priority TEXT CHECK(priority IN ('High', 'Medium', 'Low')),
+            due_date TEXT,
+            category TEXT
         )
         """)
         conn.commit()
         print("Tasks table created or already exists.")
-
-        # Add new column 'priority' to tasks table if it doesn't exist
-        print("Adding 'priority' column to tasks table if it doesn't exist...")
-        cursor.execute("ALTER TABLE tasks ADD COLUMN priority TEXT")
-        conn.commit()
-        print("Priority column added to tasks table.")
 
         # Create task_assignments table if it doesn't exist
         print("Creating task_assignments table if it doesn't exist...")
