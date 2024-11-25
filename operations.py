@@ -1,5 +1,9 @@
 import sqlite3
-
+from decorators import auth_required, log_action
+import os
+import sys
+# Add the current directory to the system path
+sys.path.append(os.path.dirname(__file__))
 def login(cursor):
     """Login function"""
     username = input("Enter your username: ").strip()
@@ -32,26 +36,10 @@ def register(cursor, conn):
 def logout():
     print("Logged out successfully.")
 
-def create_task(cursor, conn, user_id):
-    title = input("Enter task title: ").strip()
-    description = input("Enter task description: ").strip()
-    status = input("Enter task status: ").strip()
-    priority = input("Enter task priority: ").strip()  # New field
-    
-    try:
-        cursor.execute("INSERT INTO tasks (title, description, status, priority, user_id) VALUES (?, ?, ?, ?, ?)", (title, description, status, priority, user_id))
-        task_id = cursor.lastrowid
-        conn.commit()
-        print("Task created successfully.")
-        
-        # Assign the task to the creator by default
-        cursor.execute("INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)", (task_id, user_id))
-        conn.commit()
-        print("Task assigned to the creator.")
-    except sqlite3.Error as err:
-        print(f"An error occurred: {err}")
 
-def view_tasks(cursor, user):
+@auth_required
+@log_action("Viewing tasks")
+def view_tasks(cursor, user, current_user=None):
     try:
         user_id = user[0]  # Assuming the user ID is the first element in the user tuple
         cursor.execute("""
@@ -73,7 +61,9 @@ def view_tasks(cursor, user):
     except sqlite3.Error as err:
         print(f"An error occurred: {err}")
 
-def view_all_tasks(cursor):
+@auth_required
+@log_action("Viewing all tasks")
+def view_all_tasks(cursor, current_user=None):
     try:
         cursor.execute("""
         SELECT tasks.id, tasks.title, tasks.description, tasks.status, tasks.priority, GROUP_CONCAT(users.username, ', ') as assignees
@@ -91,20 +81,45 @@ def view_all_tasks(cursor):
     except sqlite3.Error as err:
         print(f"An error occurred: {err}")
 
-def update_task(cursor, conn, user_id):
+@auth_required
+@log_action("Creating task")
+def create_task(cursor, conn, user_id, current_user=None):
+    title = input("Enter task title: ").strip()
+    description = input("Enter task description: ").strip()
+    status = input("Enter task status: ").strip()
+    priority = input("Enter task priority: ").strip()  # New field
+    
+    try:
+        cursor.execute("INSERT INTO tasks (title, description, status, priority, user_id) VALUES (?, ?, ?, ?, ?)", (title, description, status, priority, user_id))
+        task_id = cursor.lastrowid
+        conn.commit()
+        print("Task created successfully.")
+        
+        # Assign the task to the creator by default
+        cursor.execute("INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)", (task_id, user_id))
+        conn.commit()
+        print("Task assigned to the creator.")
+    except sqlite3.Error as err:
+        print(f"An error occurred: {err}")
+
+@auth_required
+@log_action("Updating task")
+def update_task(cursor, conn, user_id, current_user=None):
     # Display the user's tasks
     try:
         cursor.execute("""
-        SELECT tasks.id, tasks.title, tasks.description, tasks.status, tasks.priority
+        SELECT tasks.id, tasks.title, tasks.description, tasks.status, tasks.priority, GROUP_CONCAT(users.username, ', ') as assignees
         FROM tasks
         JOIN task_assignments ON tasks.id = task_assignments.task_id
+        JOIN users ON task_assignments.user_id = users.id
         WHERE task_assignments.user_id = ?
+        GROUP BY tasks.id
         """, (user_id,))
         tasks = cursor.fetchall()
         if tasks:
             print("Your tasks:")
             for task in tasks:
-                print(f"ID: {task[0]}, Title: {task[1]}, Description: {task[2]}, Status: {task[3]}, Priority: {task[4]}")
+                print(f"ID: {task[0]}, Title: {task[1]}, Description: {task[2]}, Status: {task[3]}, Priority: {task[4]}, Assigned to: {task[5]}")
         else:
             print("No tasks found.")
             return
@@ -146,20 +161,24 @@ def update_task(cursor, conn, user_id):
     except sqlite3.Error as err:
         print(f"An error occurred: {err}")
 
-def delete_task(cursor, conn, user_id):
+@auth_required
+@log_action("Deleting task")
+def delete_task(cursor, conn, user_id, current_user=None):
     # Display the user's tasks
     try:
         cursor.execute("""
-        SELECT tasks.id, tasks.title, tasks.description, tasks.status
+        SELECT tasks.id, tasks.title, tasks.description, tasks.status, tasks.priority, GROUP_CONCAT(users.username, ', ') as assignees
         FROM tasks
         JOIN task_assignments ON tasks.id = task_assignments.task_id
+        JOIN users ON task_assignments.user_id = users.id
         WHERE task_assignments.user_id = ?
+        GROUP BY tasks.id
         """, (user_id,))
         tasks = cursor.fetchall()
         if tasks:
             print("Your tasks:")
             for task in tasks:
-                print(f"ID: {task[0]}, Title: {task[1]}, Description: {task[2]}, Status: {task[3]}")
+                print(f"ID: {task[0]}, Title: {task[1]}, Description: {task[2]}, Status: {task[3]}, Priority: {task[4]}, Assigned to: {task[5]}")
         else:
             print("No tasks found.")
             return
@@ -178,7 +197,9 @@ def delete_task(cursor, conn, user_id):
     except sqlite3.Error as err:
         print(f"An error occurred: {err}")
 
-def assign_task(cursor, conn, current_user_id):
+@auth_required
+@log_action("Assigning task")
+def assign_task(cursor, conn, current_user_id, current_user=None):
     # Display the current tasks
     try:
         cursor.execute("SELECT id, title FROM tasks WHERE user_id = ?", (current_user_id,))

@@ -46,33 +46,33 @@ def main():
                 register(cursor, conn)
             elif choice == "3":  # View My Tasks
                 if current_user:
-                    view_tasks(cursor, current_user)
+                    view_tasks(cursor, user=current_user, current_user=current_user)
                 else:
                     print("You must be logged in to view tasks.")
             elif choice == "4":  # View All Tasks
-                view_all_tasks(cursor)
+                view_all_tasks(cursor, current_user=current_user)
             elif choice == "5":  # Create a task
                 if current_user:
                     user_id = current_user[0]  # Extract user ID from the tuple
-                    create_task(cursor, conn, user_id)
+                    create_task(cursor, conn, user_id, current_user=current_user)
                 else:
                     print("You must be logged in to create a task.")
             elif choice == "6":  # Update a task
                 if current_user:
                     user_id = current_user[0]  # Extract user ID from the tuple
-                    update_task(cursor, conn, user_id)
+                    update_task(cursor, conn, user_id, current_user=current_user)
                 else:
                     print("You must be logged in to update a task.")
             elif choice == "7":  # Delete a task
                 if current_user:
                     user_id = current_user[0]  # Extract user ID from the tuple
-                    delete_task(cursor, conn, user_id)
+                    delete_task(cursor, conn, user_id, current_user=current_user)
                 else:
                     print("You must be logged in to delete a task.")
             elif choice == "8":  # Assign a task
                 if current_user:
                     user_id = current_user[0]  # Extract user ID from the tuple
-                    assign_task(cursor, conn, user_id)
+                    assign_task(cursor, conn, user_id, current_user=current_user)
                 else:
                     print("You must be logged in to assign a task.")
             elif choice == "9":  # Logout
