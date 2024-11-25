@@ -272,13 +272,28 @@ def assign_task(cursor, conn, current_user_id, current_user=None):
         print("Task assigned successfully.")
     except sqlite3.Error as err:
         print(f"An error occurred: {err}")
-
+        
+@auth_required
 @log_action("Deleting user")
 def delete_user(cursor, conn, current_user=None):
     username = input("Enter the username of the user to delete: ").strip()
     
     try:
-        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+        # Get the user ID
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        if not user:
+            print(f"User '{username}' not found.")
+            return
+        
+        user_id = user[0]
+
+        # Unassign tasks assigned to this user
+        cursor.execute("DELETE FROM task_assignments WHERE user_id = ?", (user_id,))
+        conn.commit()
+
+        # Delete the user
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         print(f"User '{username}' deleted successfully.")
     except sqlite3.Error as err:
