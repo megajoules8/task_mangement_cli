@@ -1,6 +1,6 @@
-#print("Script is running!")  # Add this at the top of main.py
 from db_connection import connect_to_db
 from operations import login, register, logout, create_task, view_tasks, view_all_tasks, update_task, delete_task, assign_task, delete_user
+from models import initialize_db
 
 # Global variable to track the logged-in user
 current_user = None
@@ -23,81 +23,69 @@ def show_menu():
     """)
 
 def main():
-    """Main program loop."""
     global current_user
-
-    try:
-        print("Attempting to connect to the database...")
-        # Establish database connection
-        conn, cursor = connect_to_db()
-        if not conn or not cursor:
-            print("Failed to connect to the database. Exiting...")
-            return
-        print("Connected to the database.")
-
-        while True:
-            show_menu()
-            choice = input("Choose an option: ").strip()
-            print(f"User selected option: {choice}")
-
-            if choice == "1":  # Log in
-                current_user = login(cursor)
-                print(f"Current user: {current_user}")
-            elif choice == "2":  # Register
-                register(cursor, conn)
-            elif choice == "3":  # View My Tasks
-                if current_user:
-                    view_tasks(cursor, user=current_user, current_user=current_user)
-                else:
-                    print("You must be logged in to view tasks.")
-            elif choice == "4":  # View All Tasks
-                view_all_tasks(cursor, current_user=current_user)
-            elif choice == "5":  # Create a task
-                if current_user:
-                    user_id = current_user[0]  # Extract user ID from the tuple
-                    create_task(cursor, conn, user_id, current_user=current_user)
-                else:
-                    print("You must be logged in to create a task.")
-            elif choice == "6":  # Update a task
-                if current_user:
-                    user_id = current_user[0]  # Extract user ID from the tuple
-                    update_task(cursor, conn, user_id, current_user=current_user)
-                else:
-                    print("You must be logged in to update a task.")
-            elif choice == "7":  # Delete a task
-                if current_user:
-                    user_id = current_user[0]  # Extract user ID from the tuple
-                    delete_task(cursor, conn, user_id, current_user=current_user)
-                else:
-                    print("You must be logged in to delete a task.")
-            elif choice == "8":  # Assign a task
-                if current_user:
-                    user_id = current_user[0]  # Extract user ID from the tuple
-                    assign_task(cursor, conn, user_id, current_user=current_user)
-                else:
-                    print("You must be logged in to assign a task.")
-            elif choice == "9":  # Logout
-                if current_user:
-                    logout()
-                    current_user = None
-                else:
-                    print("You are not logged in.")
-            elif choice == "10":  # Exit
-                print("Exiting the Task Manager. Goodbye!")
-                break
-            elif choice == "11":  # Delete User
-                if current_user:
-                    delete_user(cursor, conn, current_user=current_user)
-                else:
-                    print("You must be logged in to delete a user.")
+    initialize_db()
+    print("Starting the Task Manager CLI...")
+    session = connect_to_db()
+    
+    while True:
+        show_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == '1':
+            username = input("Enter username: ").strip()
+            password = input("Enter password: ").strip()
+            current_user = login(username, password)
+        elif choice == '2':
+            username = input("Enter new username: ").strip()
+            password = input("Enter new password: ").strip()
+            register(username, password)
+        elif choice == '3':
+            if current_user:
+                view_tasks(current_user.id, current_user=current_user)
             else:
-                print("Invalid choice. Please try again.")
-        # Close the database connection
-        conn.close()
-    except Exception as e:
-        print(f"An error occurred: {e}")
+                print("Please log in first.")
+        elif choice == '4':
+            view_all_tasks()
+        elif choice == '5':
+            if current_user:
+                create_task(current_user.id, current_user=current_user)
+            else:
+                print("Please log in first.")
+        elif choice == '6':
+            if current_user:
+                task_id = int(input("Enter task ID to update: ").strip())
+                update_task(task_id, current_user=current_user)
+            else:
+                print("Please log in first.")
+        elif choice == '7':
+            if current_user:
+                task_id = int(input("Enter task ID to delete: ").strip())
+                delete_task(task_id, current_user=current_user)
+            else:
+                print("Please log in first.")
+        elif choice == '8':
+            if current_user:
+                task_id = int(input("Enter task ID to assign: ").strip())
+                user_id = int(input("Enter user ID to assign to: ").strip())
+                assign_task(task_id, user_id, current_user=current_user)
+            else:
+                print("Please log in first.")
+        elif choice == '9':
+            logout()
+            current_user = None
+        elif choice == '10':
+            print("Exiting Task Manager CLI.")
+            break
+        elif choice == '11':
+            if current_user:
+                user_id = int(input("Enter user ID to delete: ").strip())
+                delete_user(user_id, current_user=current_user)
+            else:
+                print("Please log in first.")
+        else:
+            print("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
-    print("Starting the Task Manager CLI...")
+    initialize_db()
     main()
-    print("Task Manager CLI has exited.")

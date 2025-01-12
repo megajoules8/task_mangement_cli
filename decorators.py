@@ -1,4 +1,5 @@
-# decorators.py
+#decorators.py
+#could have used contextlib?
 import logging
 from functools import wraps
 
