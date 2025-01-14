@@ -1,4 +1,4 @@
-This is an ongoing project I am currently working on with a student to practice a few concepts.
+This is an ongoing project I am currently working on for a student to give them examples of a few concepts.
 It has been updated from using direct SQLlite database queries to using SQLAlchemy as the ORM. 
 It's all still a work in progress. 
 
